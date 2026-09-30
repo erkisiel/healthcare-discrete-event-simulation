@@ -1,209 +1,350 @@
-# AI & Data Science Capstone Projects
+# Healthcare Discrete-Event Simulation
 
-This repository presents two capstone projects completed as part of my **Artificial Intelligence & Data Science minor at MEF University**.
+A **data-driven healthcare simulation project** developed for **IE 304** using Python and SimPy.
 
-The projects focus on two different areas of applied machine learning:
+The project models the outpatient patient flow of a bone diseases hospital, including appointment-based and walk-in arrivals, registration, examination, X-ray processes, queues, resource utilization, and end-of-day behavior.
 
-1. **Energy Consumption Forecasting** — time-series regression and explainable machine learning  
-2. **Turkish Social Media Sentiment Analysis** — natural language processing and binary text classification
-
-Both projects cover the complete machine learning workflow, including data preprocessing, exploratory data analysis, feature engineering, model comparison, evaluation, interpretation, and interactive deployment with Streamlit.
+The model was designed to support scenario analysis and operational improvement decisions using discrete-event simulation and statistical analysis.
 
 ---
 
-## Projects
+## Project Overview
 
-### 1. Energy Consumption Forecasting Using Machine Learning
+The simulation represents a multi-clinic outpatient system with:
 
-A machine learning pipeline for predicting **hourly electricity consumption** from historical energy demand data.
+- Appointment-based patient arrivals
+- Walk-in patients
+- Seven clinical departments
+- Registration desk
+- X-ray registration
+- Three X-ray rooms
+- Primary examination
+- Secondary/control examination
+- Priority-based queues
+- Lunch-break constraints
+- End-of-day completion logic
+- Stochastic service and arrival times
 
-The dataset contains **121,107 hourly observations spanning 2004–2018**. Temporal, lag-based, and rolling-window features were engineered from the original time-series data.
-
-#### Models
-- Linear Regression
-- Decision Tree
-- Random Forest
-- Gradient Boosting
-
-#### Key techniques
-- Time-series preprocessing
-- Temporal feature engineering
-- Lag features: `lag_1`, `lag_24`, `lag_168`
-- Rolling statistics
-- Chronological train/test split
-- GridSearchCV
-- Time-series cross-validation
-- SHAP explainability
-- Streamlit deployment
-
-#### Results
-The tuned Decision Tree achieved approximately:
-
-| Metric | Result |
-|---|---:|
-| MAE | ~26 MW |
-| RMSE | ~51 MW |
-| Test R² | ~0.9999 |
-| 5-fold CV R² | 0.9888 |
-
-SHAP analysis showed that the **1-hour lag feature (`lag_1`) contributed approximately 95% of total feature importance**, highlighting the strong short-term autocorrelation in electricity demand.
-
-The project was also deployed as an interactive **Streamlit forecasting dashboard** with exploratory analysis, model comparison, live prediction, and prediction explanations.
-
-**Full report:** [Energy Consumption Forecasting Report](reports/energy_consumption_forecasting_report.pdf)
+The implementation is built with **SimPy** and uses multiple independent random-number streams to support reproducible simulation experiments.
 
 ---
 
-### 2. Turkish Social Media Sentiment Analysis
+## Main Features
 
-A Natural Language Processing project for classifying Turkish social media comments as **Positive** or **Negative**.
+### Patient Flow
 
-The final dataset contains **11,117 labeled Turkish social media comments**. The project investigates how classical machine learning methods perform on Turkish text using TF-IDF representations.
+Patients may enter the system as either:
 
-#### NLP pipeline
-- Text cleaning and normalization
-- URL removal
-- Mention and hashtag removal
-- Turkish-character-aware preprocessing
-- Stop-word processing
-- TF-IDF vectorization
-- Unigrams and bigrams
-- Stratified train/test split
+- **Scheduled patients**
+- **Walk-in patients**
 
-#### Models
-- Logistic Regression
-- Multinomial Naive Bayes
-- Linear SVM
+The model tracks patients through:
 
-#### Results
+```text
+Arrival
+  ↓
+Registration
+  ↓
+Clinical Examination
+  ↓
+X-Ray Decision
+  ↓
+X-Ray Registration
+  ↓
+X-Ray Room
+  ↓
+Return to Same Doctor
+  ↓
+Control Examination
+  ↓
+Exit
+```
 
-| Model | Accuracy | Weighted F1 |
-|---|---:|---:|
-| Logistic Regression | ~86.2% | ~0.88 |
-| Naive Bayes | ~85.8% | ~0.87 |
-| Linear SVM | ~85.9% | ~0.87 |
-
-The analysis also identified an important Turkish NLP challenge: **negation and agglutinative morphology** can cause bag-of-words models to misinterpret phrases whose sentiment depends on context.
-
-The project includes an interactive **Streamlit application** for real-time sentiment prediction and model inspection.
-
-**Full report:** [Turkish Social Media Sentiment Analysis Report](reports/turkish_sentiment_analysis_report.pdf)
+The project specification requires appointment schedules to be configurable and walk-in arrivals to follow an estimated distribution.
 
 ---
 
-## Technology Stack
+## Clinical Departments
+
+The simulation includes seven clinical departments:
+
+- Orthopedics 1
+- Hand Surgery
+- Pediatric Orthopedics
+- Orthopedics 2
+- Tumor
+- Spine
+- Sports Medicine
+
+Each department is represented as a simulation resource and may use different patient schedules and X-ray probabilities.
+
+---
+
+## Appointment Schedules
+
+The code supports multiple appointment schedules.
+
+Examples include:
+
+### Schedule 1
+- Every 6 minutes from 08:00–12:00
+- Every 6 minutes from 13:00–16:00
+
+### Schedule 2
+- Every 6 minutes from 08:00–10:00
+- Every 10 minutes from 10:00–12:00
+- Every 8 minutes from 13:00–15:00
+- Every 10 minutes from 15:00–16:00
+
+### Schedule 3
+- Every 6 minutes from 08:00–10:00
+- Every 8 minutes from 10:00–12:00
+
+Patient arrival times are perturbed around their scheduled appointment times using a triangular distribution.
+
+---
+
+## Statistical Modeling
+
+The simulation uses fitted probability distributions for service processes.
+
+Examples include:
+
+- Initial examination time
+- Control examination time
+- X-ray service time by room
+- Walk-in arrivals
+- Registration time
+- Travel time between departments
+
+Gamma distributions are used for several service-time processes.
+
+---
+
+## X-Ray Modeling
+
+The X-ray subsystem includes:
+
+- Department-specific probability of requiring X-ray
+- Probability of choosing each X-ray room
+- X-ray registration desk
+- Three X-ray rooms
+- X-ray service-time distributions
+- Return flow to the original doctor
+- Secondary examination after X-ray
+
+The model also tracks X-ray utilization and queue lengths.
+
+---
+
+## Queueing Logic
+
+The simulation uses SimPy resources and priority resources.
+
+The code supports:
+
+- Priority-based queues
+- FIFO scenario testing
+- Separate clinic queues
+- Registration queues
+- X-ray queues
+- X-ray registration queue
+
+The queue discipline can be changed during scenario experiments.
+
+---
+
+## Simulation Experiment Design
+
+The base model runs:
+
+- **30 replications**
+- Independent seeded random streams
+- Patient conservation checks
+- End-of-day completion logic
+
+For each replication, the model records system-level and resource-level metrics.
+
+---
+
+## Performance Metrics
+
+The simulation evaluates:
+
+- Average system time
+- Average waiting time
+- Maximum waiting time
+- Clinic-level waiting times
+- Queue lengths over time
+- X-ray room utilization
+- Registration queue length
+- Number of patients sent to X-ray
+- Number of late-arriving patients
+- Number of patients remaining at end of day
+
+---
+
+## Statistical Validation
+
+The project includes statistical analysis of simulation output.
+
+### 95% Confidence Intervals
+
+Confidence intervals are calculated for mean system time across replications.
+
+### t-Test
+
+A one-sample t-test compares the simulated mean system time against a reference value.
+
+The analysis reports:
+
+- Mean
+- Standard deviation
+- 95% confidence interval
+- t-statistic
+- p-value
+
+---
+
+## Design of Improvement
+
+The project includes a structured scenario-analysis module.
+
+Three main factors are evaluated:
+
+1. **Walk-in patient ratio**
+2. **Service-time multiplier**
+3. **X-ray referral probability**
+
+The model compares multiple Low / Medium / High combinations against the baseline system.
+
+Example scenarios include:
+
+- Reduced walk-in demand
+- Increased walk-in demand
+- Faster service times
+- Slower service times
+- Lower X-ray referral probability
+- Higher X-ray referral probability
+- Combined best-case scenario
+- Combined worst-case scenario
+
+Each scenario is evaluated across multiple replications.
+
+---
+
+## Sensitivity Analysis
+
+A **One-at-a-Time (OAT)** sensitivity analysis is implemented for:
+
+- Walk-in ratio
+- Service-time scaling
+- X-ray referral probability
+
+The project generates confidence intervals and response plots showing how each parameter affects average system time.
+
+---
+
+## Visualizations
+
+The model generates several analytical plots, including:
+
+- System-time distribution
+- Waiting-time distribution
+- Clinic-level average waiting time
+- X-ray room utilization
+- Clinic queue-length time series
+- X-ray queue-length time series
+- Registration queue time series
+- t-test visualization
+- Scenario comparison charts
+- Scenario boxplots
+- Main-effects plots
+- Improvement heatmaps
+- Best / worst / baseline comparisons
+- Sensitivity-analysis plots
+
+---
+
+## Technologies
 
 - **Python**
-- **Pandas**
+- **SimPy**
 - **NumPy**
-- **Scikit-learn**
-- **Streamlit**
-- **SHAP**
-- **TF-IDF**
-- Machine Learning
-- Natural Language Processing
-- Time-Series Forecasting
-- Data Visualization
-- Model Evaluation
+- **Pandas**
+- **Matplotlib**
+- **Seaborn**
+- **SciPy**
+- Discrete-Event Simulation
+- Queueing Systems
+- Statistical Analysis
+- Scenario Analysis
+- Sensitivity Analysis
 
 ---
 
-## Machine Learning Workflow
-
-Both projects were developed using an end-to-end applied machine learning workflow:
+## Project Structure
 
 ```text
-Data Collection / Dataset
-        ↓
-Data Cleaning
-        ↓
-Exploratory Data Analysis
-        ↓
-Feature Engineering
-        ↓
-Model Training
-        ↓
-Model Comparison
-        ↓
-Performance Evaluation
-        ↓
-Explainability / Error Analysis
-        ↓
-Interactive Streamlit Application
+healthcare-discrete-event-simulation/
+│
+├── simulation.py
+├── requirements.txt
+├── README.md
+│
+├── docs/
+│   └── System_for_project_2026.docx
+│
+└── results/
+    └── generated simulation plots
 ```
 
 ---
 
-## Repository Structure
+## Installation
 
-```text
-Capstone-Project/
-│
-├── energy-consumption-forecasting/
-│   └── project files
-│
-├── turkish-sentiment-analysis/
-│   └── project files
-│
-├── reports/
-│   ├── energy_consumption_forecasting_report.pdf
-│   └── turkish_sentiment_analysis_report.pdf
-│
-└── README.md
+Clone the repository:
+
+```bash
+git clone https://github.com/erkisiel/healthcare-discrete-event-simulation.git
+cd healthcare-discrete-event-simulation
 ```
 
-> The exact source-code folders can be adjusted to match the current repository structure.
+Install dependencies:
+
+```bash
+pip install -r requirements.txt
+```
+
+---
+
+## Running the Simulation
+
+Run:
+
+```bash
+python simulation.py
+```
+
+The simulation executes the base model, performs 30 replications, produces statistical summaries, and generates output figures.
+
+Depending on the enabled analysis sections, it can also execute scenario and sensitivity experiments.
 
 ---
 
 ## Academic Context
 
-These projects were completed for **DSAI 302 – Capstone Project** at **MEF University** as part of my **Artificial Intelligence & Data Science minor**.
+This project was developed for an **Industrial Engineering simulation course (IE 304)**.
 
-**Student:** Elif Erkişi  
-**Instructor:** Tuna Çakar  
-**Year:** 2026
+The system definition includes:
 
----
-
-## What I Practiced
-
-Through these projects, I worked on:
-
-- Building complete machine learning pipelines
-- Working with structured and unstructured datasets
-- Time-series feature engineering
-- Turkish NLP preprocessing
-- Regression and classification
-- Hyperparameter tuning
-- Cross-validation
-- Model interpretation with SHAP
-- Error and misclassification analysis
-- Interactive ML application development with Streamlit
-
----
-
-## Future Improvements
-
-### Energy Forecasting
-- Add meteorological variables such as temperature and humidity
-- Explore multi-step forecasting
-- Experiment with LSTM and Transformer-based forecasting models
-- Evaluate generalization across different geographic regions
-
-### Turkish Sentiment Analysis
-- Fine-tune Turkish transformer models such as BERTurk
-- Improve modeling of Turkish negation and morphology
-- Add subword tokenization
-- Extend the dataset
-- Explore domain-specific sentiment features
-
----
-
-## Reports
-
-- [Energy Consumption Forecasting – Full Report](reports/energy_consumption_forecasting_report.pdf)
-- [Turkish Social Media Sentiment Analysis – Full Report](reports/turkish_sentiment_analysis_report.pdf)
+- Scheduled and walk-in arrivals
+- Multiple hospital departments
+- Department-specific X-ray probabilities
+- Configurable appointment schedules
+- Queue-discipline decisions
+- Secondary screening by the same doctor
+- Waiting-time and queue-length performance measures
 
 ---
 
@@ -211,5 +352,5 @@ Through these projects, I worked on:
 
 **Elif Erkişi**  
 Computer Engineering  
-Artificial Intelligence & Data Science Minor — Completed  
+Industrial Engineering Minor  
 MEF University
